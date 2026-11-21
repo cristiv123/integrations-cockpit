@@ -1,0 +1,19 @@
+{
+  "v": 5,
+  "createdOnFiles": {"v": 1, "at": "2026-11-20T21:45:00Z"},
+  "lists": "css",
+  "format": {"v": 1, "shared": ["project/deck.css"]},
+  "title": "Integrations-Cockpit Pitch",
+  "order": ["cover", "problem", "approach", "level1", "found", "cockpit", "patterns", "ai", "privacy", "lenses", "next"],
+  "sections": {
+    "s1": {"description": "The problem and our approach: Excel in, Excel out.", "start": "cover"},
+    "s2": {"description": "What the cockpit shows: target vs actual, findings, traffic lights, patterns.", "start": "level1"},
+    "s3": {"description": "AI on the Situationsanalyse and data protection by design.", "start": "ai"},
+    "s4": {"description": "Impact on the jury’s four lenses and next steps with the ASD.", "start": "lenses"}
+  },
+  "faces": {
+    "space-grotesk": {"family": "Space Grotesk", "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"},
+    "public-sans": {"family": "Public Sans", "href": "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap"}
+  },
+  "designSystems": []
+}

@@ -1,0 +1,213 @@
+"""Die 11 Exporte des Fallführungssystems.
+
+Pro Tabelle: kanonischer Feldname -> akzeptierte Spaltenüberschriften (der erste Eintrag
+ist die Überschrift, die der Generator schreibt). Tabellen ohne Vorlage (Klient,
+Sprachstand, Integrationsförderung, Integrationszielerreichung, Unterbringung) sind
+aus dem Datenmodell abgeleitet und müssen mit den echten Exporten abgeglichen werden.
+"""
+
+TABLES: dict[str, dict] = {
+    "klient": {
+        "label": "Klient",
+        "template_received": False,
+        "columns": {
+            "klientennummer": ["Klientennummer"],
+            "zemis": ["Zemis Nummer", "Zemis-Nr.", "Klient/-in Zemis-Nr."],
+            "dossier": ["Dossier-Nr."],
+            "zust_beginn": ["Zuständigkeitsbeginn"],
+            "zust_ende": ["Zuständigkeitsende"],
+            "uebergang_gemeinde": ["Datum Übergang Gemeindezuständigkeit"],
+            "status_aktuell": ["Verfahrensstand (aktuell)", "Verfahrensstand aktuell", "Verfahrensstand"],
+            "unterstuetzung_aktuell": ["Unterstützung (aktuell)", "Unterstützung aktuell", "Unterstützung"],
+            "fallfuehrung": ["Fallführung (Sozialarbeiter:in)", "Fallführung", "Sozialarbeiter:in"],
+            "geburtsdatum": ["Geburtsdatum"],
+            "geschlecht": ["Geschlecht"],
+            "nationalitaet": ["Nationalität Land", "Nationalität"],
+            "zivilstand": ["Zivilstand"],
+            "muttersprache": ["Muttersprache"],
+            "ausbildung": ["Höchste abgeschlossene Ausbildung"],
+            "schuljahre": ["Schuljahre vor Einreise"],
+            "lateinisch_alphabetisiert": ["Lateinisch alphabetisiert"],
+            "art_analphabetismus": ["Art Analphabetismus"],
+            "arbeitserfahrung": ["Jahre Arbeitserfahrung vor Einreise"],
+        },
+        "signature": ["zust_ende", "geburtsdatum"],
+        "dates": ["zust_beginn", "zust_ende", "uebergang_gemeinde", "geburtsdatum"],
+    },
+    "asylverfahrensstand": {
+        "label": "Asylverfahrensstand",
+        "template_received": True,
+        "columns": {
+            "zemis": ["Zemis Nummer"],
+            "klientennummer": ["Klientennummer"],
+            "dossier": ["Dossier-Nr."],
+            "gueltig_ab": ["Verfahrensstand Gültig ab", "Gültig ab"],
+            "gueltig_bis": ["Verfahrensstand Gültig bis", "Gültig bis"],
+            "status": ["Verfahrensstand"],
+        },
+        "signature": ["status", "gueltig_ab"],
+        "dates": ["gueltig_ab", "gueltig_bis"],
+    },
+    "asylgeschaeftsdaten": {
+        "label": "Asylgeschäftsdaten",
+        "template_received": True,
+        "columns": {
+            "zemis": ["Klient/-in Zemis-Nr.", "Zemis Nummer"],
+            "klientennummer": ["Klientennummer"],
+            "geschaeftsart": ["Asylgeschäftsart"],
+            "ereignisdatum": ["Ereignisdatum"],
+            "erledigung": ["Erledigung"],
+            "erledigungscode": ["Erledigungscode"],
+            "erledigungsdatum": ["Erledigungsdatum"],
+        },
+        "signature": ["geschaeftsart", "ereignisdatum"],
+        "dates": ["ereignisdatum", "erledigungsdatum"],
+    },
+    "dossierperson": {
+        "label": "Dossierperson",
+        "template_received": True,
+        "columns": {
+            "dossier": ["Dossier-Nr."],
+            "klientennummer": ["Klientennummer"],
+            "zemis": ["Zemis Nummer"],
+            "von": ["Dossierperson Von", "Von"],
+            "bis": ["Dossierperson Bis", "Bis"],
+            "rolle": ["Rolle"],
+            "beziehung": ["Beziehung"],
+        },
+        "signature": ["rolle", "beziehung"],
+        "dates": ["von", "bis"],
+    },
+    "finanzielle_unterstuetzung": {
+        "label": "Finanzielle Unterstützung",
+        "template_received": True,
+        "columns": {
+            "dossier": ["Dossier-Nr."],
+            "unterstuetzung": ["Unterstützung"],
+            "gueltig_von": ["Finanzielle Unterstützung Gültig von", "Gültig von"],
+            "gueltig_bis": ["Finanzielle Unterstützung Gültig bis", "Gültig bis"],
+            "hauptgrund_beendigung": ["Hauptgrund Beendigung Unterstützung", "Hauptgrund Beendigung"],
+        },
+        "signature": ["unterstuetzung", "gueltig_von"],
+        "dates": ["gueltig_von", "gueltig_bis"],
+    },
+    "unterbringung": {
+        "label": "Unterbringung",
+        "template_received": False,
+        "columns": {
+            "klientennummer": ["Klientennummer"],
+            "von": ["Von"],
+            "bis": ["Bis"],
+            "art": ["Unterbringung Art", "Art"],
+            "plz": ["PLZ"],
+            "ort": ["Ort"],
+        },
+        "signature": ["art", "plz"],
+        "dates": ["von", "bis"],
+    },
+    "sprachstand": {
+        "label": "Sprachstand",
+        "template_received": False,
+        "columns": {
+            "zemis": ["Klient/-in Zemis-Nr.", "Zemis Nummer"],
+            "klientennummer": ["Klientennummer"],
+            "sprache": ["Sprache"],
+            "niveau": ["Sprachniveau"],
+            "nachweis": ["Art", "Art (Nachweis)", "Nachweis"],
+            "datum": ["Datum Erreichung"],
+            "bemerkungen": ["Bemerkungen"],
+        },
+        "signature": ["niveau", "sprache"],
+        "dates": ["datum"],
+    },
+    "integrationsfoerderung": {
+        "label": "Integrationsförderung und Ausbildung",
+        "template_received": False,
+        "columns": {
+            "zemis": ["Klient/-in Zemis-Nr.", "Zemis Nummer"],
+            "klientennummer": ["Klientennummer"],
+            "start": ["Start"],
+            "abschluss": ["Abschluss"],
+            "art": ["Art"],
+            "bezeichnung": ["Bezeichnung"],
+            "stunden": ["Stunden pro Woche"],
+            "institution": ["Institution Name", "Institution"],
+            "bemerkungen": ["Bemerkungen"],
+        },
+        "signature": ["bezeichnung", "stunden"],
+        "dates": ["start", "abschluss"],
+    },
+    "erwerb": {
+        "label": "Erwerb",
+        "template_received": True,
+        "columns": {
+            "zemis": ["Klient/-in Zemis-Nr.", "Zemis Nummer"],
+            "klientennummer": ["Klientennummer"],
+            "von": ["Von"],
+            "bis": ["Bis"],
+            "arbeitgeber": ["Arbeitgeber Name"],
+            "arbeitgeber_ort": ["Arbeitgeber Ort"],
+            "pensum": ["Pensum %", "Pensum"],
+            "erwerbsstatus": ["Erwerbsstatus"],
+            "einkommen": ["Monatseinkommen brutto CHF"],
+            "stundenlohn": ["Stundenlohn"],
+            "unregelmaessig": ["Unregelmässiges Einkommen"],
+            "abtretung": ["Abtretung Sozialdienst"],
+            "bemerkungen": ["Bemerkungen"],
+        },
+        "signature": ["pensum", "erwerbsstatus"],
+        "dates": ["von", "bis"],
+    },
+    "zemis_taetigkeit": {
+        "label": "ZEMIS Tätigkeit",
+        "template_received": True,
+        "columns": {
+            "zemis": ["Zemis Nummer"],
+            "klientennummer": ["Klientennummer"],
+            "arbeitsbeginn": ["Arbeitsbeginn"],
+            "verpflichtet_bis": ["Verpflichtet bis"],
+            "betrieb": ["Betrieb"],
+        },
+        "signature": ["arbeitsbeginn", "betrieb"],
+        "dates": ["arbeitsbeginn", "verpflichtet_bis"],
+    },
+    "integrationszielerreichung": {
+        "label": "Integrationszielerreichung",
+        "template_received": False,
+        "columns": {
+            "zemis": ["Klient/-in Zemis-Nr.", "Zemis Nummer"],
+            "ziel": ["Art (Ziel)", "Art", "Ziel"],
+            "erreicht_am": ["Erreicht am"],
+            "partner_region": ["Partner (Region)", "Partner"],
+            "kohorte": ["Jahr Grundgesamtheit (Kohorte)", "Jahr Grundgesamtheit"],
+            "mit_status_s": ["Ziel mit Status S erreicht"],
+        },
+        "signature": ["erreicht_am"],
+        "dates": ["erreicht_am"],
+    },
+}
+
+TABLES["situationsanalyse_merkmale"] = {
+    "label": "Situationsanalyse (Merkmale)",
+    "template_received": False,
+    "columns": {
+        "zemis": ["Zemis-Nr."],
+        "dossier": ["Dossier-Nr."],
+        "datei": ["Datei"],
+        "methode": ["Methode"],
+        "psychische_belastung": ["Psychische Belastung"],
+        "lernmotivation": ["Lernmotivation"],
+        "lerntempo": ["Lerntempo"],
+        "betreuung_hindernis": ["Betreuungspflichten als Hindernis"],
+        "soziales_netz": ["Soziales Netz"],
+        "hinweis": ["Hinweis"],
+    },
+    "signature": ["methode", "lernmotivation"],
+    "dates": [],
+}
+
+KEY_COLUMNS = ("klientennummer", "zemis", "dossier")
+
+
+def export_headers(table: str) -> dict[str, str]:
+    return {field: aliases[0] for field, aliases in TABLES[table]["columns"].items()}

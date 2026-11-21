@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASD Integrations-Cockpit · Datenmodell / Data model</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --ink: #1d1d1b; --muted: #6b6a64; --card: #fff; --line: #b9b6ab;
+    --g1: #2f6fdb; --g2: #d9711c; --g3: #1f9d63; --t: #7a4fd1; --hh: #c23d6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  header { padding: 20px 28px 8px; max-width: 1560px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0 0 12px; color: var(--muted); max-width: 980px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .filters button { border: 1.5px solid currentColor; background: #fff; border-radius: 999px; padding: 5px 12px; font: inherit; cursor: pointer; }
+  .filters button[aria-pressed="true"] { color: #fff !important; }
+  .filters button[data-f="g1"] { color: var(--g1); } .filters button[data-f="g1"][aria-pressed="true"] { background: var(--g1); border-color: var(--g1); }
+  .filters button[data-f="g2"] { color: var(--g2); } .filters button[data-f="g2"][aria-pressed="true"] { background: var(--g2); border-color: var(--g2); }
+  .filters button[data-f="g3"] { color: var(--g3); } .filters button[data-f="g3"][aria-pressed="true"] { background: var(--g3); border-color: var(--g3); }
+  .filters button[data-f="t"]  { color: var(--t); }  .filters button[data-f="t"][aria-pressed="true"]  { background: var(--t); border-color: var(--t); }
+  .filters button[data-f="all"] { color: var(--ink); } .filters button[data-f="all"][aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
+  .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+  .wrap { overflow: auto; padding: 8px 28px 40px; }
+  #canvas { position: relative; width: 1500px; height: 1350px; }
+  svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  svg line, svg path { stroke: var(--line); stroke-width: 1.6; fill: none; }
+  svg circle { stroke: var(--line); stroke-width: 1.6; fill: var(--bg); }
+  svg text { font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+  .legend svg { position: static; width: 64px; height: 16px; flex: none; }
+  .legend svg circle { fill: #fff; }
+  .card { position: absolute; width: 290px; background: var(--card); border: 1.5px solid #dedbd2; border-radius: 10px;
+          box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: grab; user-select: none; transition: opacity .15s; }
+  .card.dragging { cursor: grabbing; box-shadow: 0 6px 20px rgba(0,0,0,.15); z-index: 5; }
+  .card.dim { opacity: .25; }
+  .card h2 { margin: 0; padding: 9px 12px 7px; font-size: 14px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 8px; }
+  .card h2 small { font-weight: 400; color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .card .desc { padding: 6px 12px 4px; color: var(--muted); font-size: 12px; }
+  .card ul { list-style: none; margin: 0; padding: 4px 0 8px; }
+  .card li { padding: 2px 12px; font-size: 12.5px; display: flex; gap: 6px; align-items: baseline; }
+  .card li.key { font-weight: 600; }
+  .card li .k { font-size: 10px; font-weight: 700; color: #fff; background: var(--ink); border-radius: 3px; padding: 0 4px; }
+  .card li .tag { margin-left: auto; display: flex; gap: 3px; }
+  .card li .tag i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .card li.hl { background: #fff7d6; }
+  .card li.gap { color: #a23; font-style: italic; }
+  .card.hub { border-color: var(--ink); border-width: 2px; }
+  .card.household { border-color: var(--hh); }
+  .card.virtual { border-style: dashed; background: #fdf6f8; }
+  i.g1 { background: var(--g1); } i.g2 { background: var(--g2); } i.g3 { background: var(--g3); } i.t { background: var(--t); }
+  .legend { position: absolute; left: 1180px; top: 875px; width: 310px; font-size: 12.5px; background: #fff; border: 1.5px dashed #cfcbbf; border-radius: 10px; padding: 12px 14px; }
+  .legend h3 { margin: 0 0 6px; font-size: 13px; }
+  .legend div { display: flex; gap: 8px; align-items: center; margin: 3px 0; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .card h2 > span { display: flex; flex-direction: column; }
+  .card .de { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); font-style: normal; }
+  .lang { float: right; font-size: 13px; } .lang a { color: var(--muted); text-decoration: none; } .lang a.on { color: var(--ink); font-weight: 700; }
+  @media print { .screen, .filters, .hint, .lang { display: none; } .wrap { overflow: visible; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="lang"><a href="?lang=en" data-l="en">EN</a> · <a href="?lang=de" data-l="de">DE</a></div>
+  <h1 id="h1"></h1>
+  <p id="intro"></p>
+  <div class="filters" role="group"></div>
+  <p class="hint" id="hint"></p>
+</header>
+<div class="wrap"><div id="canvas"><svg id="lines"></svg></div></div>
+
+<script>
+const LANG = new URLSearchParams(location.search).get("lang") === "de" ? "de" : "en";
+const tr = (de, en) => (LANG === "de" ? de : en);
+document.documentElement.lang = LANG;
+document.querySelector(`.lang a[data-l="${LANG}"]`).classList.add("on");
+
+document.getElementById("h1").textContent = tr("Integrations-Cockpit · Datenmodell Asylsozialdienst Stadt Bern",
+  "Integrations-Cockpit · Data model, Asylsozialdienst Stadt Bern");
+document.getElementById("intro").innerHTML = tr(
+  `11 Exporte aus dem Fallführungssystem. <b>Klient</b> ist die Drehscheibe: Personen-Tabellen hängen über <b>Zemis-Nr.</b>
+   oder <b>Klientennummer</b> daran, Haushalts-Tabellen über die <b>Dossier-Nr.</b> (Unterstützungseinheit).
+   <span class="screen">Klick auf ein Ziel zeigt, welche Tabellen und Felder du dafür brauchst.</span>`,
+  `11 exports from the case management system. <b>Client</b> is the hub: person tables link via the <b>ZEMIS number</b>
+   or the <b>client number</b>, household tables via the <b>case file number</b> (Dossier-Nr., support unit).
+   <span class="screen">Click a goal to see which tables and fields you need.</span>`);
+document.getElementById("hint").textContent = tr(
+  "Karten lassen sich verschieben. Linien in Crow's-Foot-Notation, Legende unten rechts.",
+  "Cards can be dragged. Lines in crow's-foot notation, legend at the bottom right.");
+document.querySelector(".filters").innerHTML = [
+  ["all", "Alle Tabellen", "All tables"], ["t", "Fristen &amp; Status", "Deadlines &amp; status"],
+  ["g1", "Ziel 1 · Sprache A1", "Goal 1 · Language A1"], ["g2", "Ziel 2 · Arbeit / Ausbildung", "Goal 2 · Work / education"],
+  ["g3", "Ziel 3 · Finanzielle Selbstständigkeit", "Goal 3 · Financial independence"],
+].map(([f, de, en]) => `<button data-f="${f}" aria-pressed="${f === "all"}">${tr(de, en)}</button>`).join("");
+
+// Field: [German column name (as in the export), English, isKey, goal tags, isGap]
+const F = (de, en, key = 0, tags = "", gap = 0) => ({ de, en, key, tags, gap });
+const ZEMIS = F("Klient/-in Zemis-Nr.", "Client ZEMIS number", 1), KNR = F("Klientennummer", "Client number", 1);
+const ZNR = F("Zemis Nummer", "ZEMIS number", 1), DNR = (tags = "") => F("Dossier-Nr.", "Case file number", 1, tags);
+const PER_P = ["n Zeilen / Person", "n rows / person"];
+// Tables: [German name, English name, rows de/en, x, minimum y, description de/en, fields, css class]
+const T = [
+  ["Klient", "Client", ["1 Zeile / Person", "1 row / person"], 520, 300,
+    ["Stammdaten pro Person. Zuständigkeitsende = Ende Bundespauschale = Stichtag für Ziel 2 und 3.",
+     "Master data per person. End of responsibility = end of the federal lump sum = cut-off for goals 2 and 3."], [
+    KNR, ZNR, DNR("g3"),
+    F("Zuständigkeitsbeginn", "Start of responsibility", 0, "t"), F("Zuständigkeitsende", "End of responsibility", 0, "t g2 g3"),
+    F("Datum Übergang Gemeindezuständigkeit", "Date of handover to the municipality", 0, "t"),
+    F("Verfahrensstand (aktuell)", "Residence status (current)", 0, "t g1 g2"), F("Unterstützung (aktuell)", "Social assistance (current)", 0, "g3"),
+    F("Fallführung (Sozialarbeiter:in)", "Case manager (social worker)"),
+    F("Geburtsdatum (für «ab 16 J.»)", "Birth date (for \"16+\")", 0, "g1 g2"),
+    F("Geschlecht", "Gender"), F("Nationalität Land", "Nationality"), F("Zivilstand", "Marital status"),
+    F("Muttersprache", "Mother tongue", 0, "g1"), F("Höchste abgeschlossene Ausbildung", "Highest completed education", 0, "g1 g2"),
+    F("Schuljahre vor Einreise", "Years of schooling before entry", 0, "g1"),
+    F("Lateinisch alphabetisiert / Art Analphabetismus", "Literate in Latin script / type of illiteracy", 0, "g1"),
+    F("Jahre Arbeitserfahrung vor Einreise", "Years of work experience before entry", 0, "g2")], "hub"],
+  ["Asylverfahrensstand", "Asylum procedure status", PER_P, 850, 30,
+    ["Status-Historie: N → B-FL, VA, F-FL … mit Gültig ab/bis.", "Status history: N → B-FL, VA, F-FL … with valid from/to."], [
+    ZNR, KNR, DNR(), F("Verfahrensstand", "Procedure status", 0, "t"), F("Gültig ab / Gültig bis", "Valid from / valid to", 0, "t")]],
+  ["Asylgeschäftsdaten", "Asylum case events", PER_P, 520, 30,
+    ["Ereignisse beim Bund (ZEMIS). Hier stehen Einreise- und Asylgesuchsdatum.",
+     "Events at the federal level (ZEMIS). Contains the entry date and the asylum application date."], [
+    ZEMIS, KNR, F("Asylgeschäftsart", "Event type", 0, "t"), F("Ereignisdatum", "Event date", 0, "t g1"),
+    F("Erledigung / Erledigungscode", "Outcome / outcome code", 0, "t"), F("Erledigungsdatum", "Outcome date", 0, "t")]],
+  ["Dossierperson", "Household member", ["n Zeilen / Dossier", "n rows / household"], 40, 30,
+    ["Wer gehört zur Unterstützungseinheit (Haushalt)? Rolle und Beziehung.",
+     "Who belongs to the support unit (household)? Role and relationship."], [
+    DNR("g3"), KNR, ZNR, F("Von / Bis", "From / to", 0, "g3"), F("Rolle", "Role"), F("Beziehung", "Relationship")], "household"],
+  ["Dossier (Haushalt)", "Case file (household)", ["kein Export", "no export"], 40, 330,
+    ["Gedachte Entität: der Haushalt existiert nur als Schlüssel Dossier-Nr. in drei Tabellen.",
+     "Conceptual entity: the household exists only as the key Dossier-Nr. in three tables."], [DNR("g3")], "household virtual"],
+  ["Finanzielle Unterstützung", "Financial support", ["n Zeilen / Dossier", "n rows / household"], 40, 520,
+    ["Sozialhilfe-Perioden pro Haushalt. 12 Monate ohne Sozialhilfe = Ziel 3.",
+     "Social assistance periods per household. 12 months without social assistance = goal 3."], [
+    DNR("g3"), F("Unterstützung", "Type of support", 0, "g3"), F("Gültig von / Gültig bis", "Valid from / valid to", 0, "g3"),
+    F("Hauptgrund Beendigung", "Main reason for ending", 0, "g3")], "household"],
+  ["Unterbringung", "Accommodation", PER_P, 40, 850,
+    ["Wohnform und Ort. Nur Klientennummer als Schlüssel.", "Type of housing and location. Client number is the only key."], [
+    KNR, F("Von / Bis", "From / to"), F("Unterbringung Art", "Accommodation type"), F("PLZ / Ort", "Postcode / town")]],
+  ["Sprachstand", "Language level", PER_P, 1180, 30,
+    ["Sprachniveaus und Nachweis-Art. Zertifizierung, Muttersprache, Schulzeit, Ausbildung zählen.",
+     "Language levels and type of proof. Certification, mother tongue, schooling and education count."], [
+    ZEMIS, KNR, F("Sprache", "Language", 0, "g1"), F("Sprachniveau (A0 … C2)", "Language level (A0 … C2)", 0, "g1"),
+    F("Art (Nachweis)", "Type of proof", 0, "g1"), F("Datum Erreichung", "Date reached", 0, "g1"),
+    F("Bemerkungen (z.B. telc / fide)", "Remarks (e.g. telc / fide)", 0, "g1")]],
+  ["Integrationsförderung und Ausbildung", "Integration support and education", PER_P, 1180, 300,
+    ["Kurse, Brückenangebote, Lehre, Studium. Art «Sek II» und «Tertiär» zählen für Ziel 2.",
+     "Courses, bridging programmes, apprenticeships, studies. Types \"Sek II\" and \"Tertiär\" count for goal 2."], [
+    ZEMIS, KNR, F("Start / Abschluss", "Start / completion", 0, "g1 g2"), F("Art", "Type", 0, "g1 g2"),
+    F("Bezeichnung", "Name of course or programme", 0, "g1 g2"), F("Stunden pro Woche", "Hours per week"), F("Institution Name", "Institution name"),
+    F("Bemerkungen", "Remarks")]],
+  ["Erwerb", "Employment", PER_P, 1180, 580,
+    ["Anstellungen. ≥ 60 %, 1. Arbeitsmarkt, 6 Monate am Stück = Ziel 2.",
+     "Jobs. ≥ 60 %, first labour market, 6 months in a row = goal 2."], [
+    ZEMIS, KNR, F("Von / Bis", "From / to", 0, "g2"), F("Pensum %", "Workload %", 0, "g2"), F("Erwerbsstatus", "Employment status", 0, "g2"),
+    F("Monatseinkommen brutto CHF", "Gross monthly income CHF", 0, "g3"), F("Stundenlohn", "Hourly wage", 0, "g3"),
+    F("Unregelmässiges Einkommen", "Irregular income", 0, "g3"), F("Abtretung Sozialdienst", "Wage assigned to the social service"),
+    F("Arbeitgeber Name / Ort", "Employer name / town"), F("Bemerkungen", "Remarks", 0, "g2")]],
+  ["ZEMIS Tätigkeit", "ZEMIS employment", PER_P, 830, 760,
+    ["Erwerbsmeldungen beim Bund. Abgleich mit Erwerb deckt nicht gemeldete Arbeit auf.",
+     "Employment reported to the federal government. Comparing it with Employment reveals unreported work."], [
+    ZNR, KNR, F("Arbeitsbeginn", "Start of work", 0, "g2"), F("Verpflichtet bis", "Committed until", 0, "g2"), F("Betrieb", "Company", 0, "g2")]],
+  ["Integrationszielerreichung", "Integration goals reached", PER_P, 470, 800,
+    ["Bereits erreichte und nachgewiesene Ziele (das, was abgegolten wird).", "Goals already reached and proven (what gets paid)."], [
+    ZEMIS, F("Art (Ziel)", "Type (goal)", 0, "g1 g2 g3"), F("Erreicht am", "Reached on", 0, "g1 g2 g3"), F("Partner (Region)", "Partner (region)"),
+    F("Jahr Grundgesamtheit (Kohorte)", "Base year (cohort)", 0, "t"), F("Ziel mit Status S erreicht", "Goal reached with status S")]],
+];
+// [from, to, key, cardinality at "from", cardinality at "to"] (tables by German name)
+// Crow's foot: "1" = exactly one, "01" = zero or one, "1n" = one or many, "0n" = zero or many
+const L = [
+  ["Asylverfahrensstand", "Klient", "Zemis-Nr.", "1n", "1"], ["Asylgeschäftsdaten", "Klient", "Zemis-Nr.", "1n", "1"],
+  ["Sprachstand", "Klient", "Zemis-Nr.", "0n", "1"], ["Integrationsförderung und Ausbildung", "Klient", "Zemis-Nr.", "0n", "1"],
+  ["Erwerb", "Klient", "Zemis-Nr.", "0n", "1"], ["ZEMIS Tätigkeit", "Klient", "Zemis-Nr.", "0n", "1"],
+  ["Integrationszielerreichung", "Klient", "Zemis-Nr.", "0n", "1"], ["Unterbringung", "Klient", "Klientennr.", "0n", "1"],
+  ["Dossierperson", "Klient", "Klientennr.", "1n", "1"],
+  ["Klient", "Dossier (Haushalt)", "Dossier-Nr.", "1n", "1"], ["Dossierperson", "Dossier (Haushalt)", "Dossier-Nr.", "1n", "1"],
+  ["Finanzielle Unterstützung", "Dossier (Haushalt)", "Dossier-Nr.", "0n", "1"],
+  ["ZEMIS Tätigkeit", "Erwerb", tr("Abgleich", "Cross-check")],
+];
+
+const canvas = document.getElementById("canvas"), svg = document.getElementById("lines");
+const cards = {};
+// In English the German export name stays visible under each label: it is what the data files contain.
+const label = (de, en) => LANG === "de" ? de : `${en}<span class="de">${de}</span>`;
+for (const [de, en, rows, x, y, desc, fields, cls] of T) {
+  const el = document.createElement("section");
+  el.className = "card" + (cls ? " " + cls : "");
+  el.style.left = x + "px"; el.style.top = y + "px";
+  el.dataset.tags = [...new Set(fields.flatMap(f => f.tags.split(" ")).filter(Boolean))].join(" ");
+  el.innerHTML = `<h2><span>${label(de, en)}</span><small>${tr(...rows)}</small></h2><div class="desc">${tr(...desc)}</div><ul>${fields.map((f) =>
+    `<li class="${f.key ? "key" : ""} ${f.gap ? "gap" : ""}" data-tags="${f.tags}">${f.key ? '<span class="k">KEY</span>' : ""}<span>${label(f.de, f.en)}</span><span class="tag">${
+      f.tags.split(" ").filter(Boolean).map(t => `<i class="${t}"></i>`).join("")}</span></li>`).join("")}</ul>`;
+  canvas.appendChild(el); cards[de] = el;
+}
+const legend = document.createElement("div");
+legend.className = "legend";
+legend.style.left = "1180px"; legend.style.top = "875px";
+legend.innerHTML = `<h3>${tr("Legende", "Legend")}</h3>
+  <div><i class="t"></i>${tr("Fristen &amp; Status (Einreise, Zuständigkeitsende, Verfahrensstand)", "Deadlines &amp; status (entry, end of responsibility, residence status)")}</div>
+  <div><i class="g1"></i>${tr("Ziel 1 · Sprachzertifikat A1 innert 3 Jahren ab Einreise", "Goal 1 · A1 language certificate within 3 years of entry")}</div>
+  <div><i class="g2"></i>${tr("Ziel 2 · 6 Monate Arbeit ≥ 60 % oder Ausbildung Sek II / Tertiär", "Goal 2 · 6 months of work ≥ 60 % or education Sek II / tertiary")}</div>
+  <div><i class="g3"></i>${tr("Ziel 3 · 12 Monate keine Sozialhilfe für den ganzen Haushalt", "Goal 3 · 12 months without social assistance for the whole household")}</div>
+  <div><span style="border:2px solid var(--hh);border-radius:4px;width:14px;height:10px;display:inline-block"></span>${tr("Haushalt-Ebene (Dossier-Nr.)", "Household level (Dossier-Nr.)")}</div>
+  <div><span class="k" style="font-size:10px;font-weight:700;color:#fff;background:var(--ink);border-radius:3px;padding:0 4px">KEY</span>${tr("Verknüpfungsschlüssel", "Linking key")}</div>
+  ${LANG === "en" ? '<div><span style="color:var(--muted);font-size:11px">Klient</span>German column name in the exports</div>' : ""}
+  <h3 style="margin-top:10px">${tr("Kardinalität (Crow's Foot, Symbol beim Tisch)", "Cardinality (crow's foot, symbol next to the table)")}</h3>
+  ${[["1", "genau eins", "exactly one"], ["01", "null oder eins", "zero or one"], ["1n", "eins oder viele", "one or many"], ["0n", "null oder viele", "zero or many"]].map(([k, de, en]) =>
+    `<div><svg viewBox="0 0 64 16"><line x1="0" y1="8" x2="62" y2="8"/>${foot({ x: 62, y: 8 }, { x: -1, y: 0 }, k)}</svg>${tr(de, en)}</div>`).join("")}
+  <div><svg viewBox="0 0 64 16"><line x1="0" y1="8" x2="62" y2="8" stroke-dasharray="6 5"/></svg>${tr("Abgleich, kein Fremdschlüssel", "Cross-check, no foreign key")}</div>
+  <div style="color:var(--muted)">${tr("Lesebeispiel Klient ‖──○&lt; Erwerb: ein Klient hat null bis viele Anstellungen, jede Anstellung gehört zu genau einem Klient.",
+    "Reading example Client ‖──○&lt; Employment: a client has zero to many jobs, each job belongs to exactly one client.")}</div>`;
+canvas.appendChild(legend);
+
+// Cards differ in height per language: push each box below any box it would overlap, then size the canvas.
+const boxes = [...Object.values(cards), legend].sort((a, b) => a.offsetTop - b.offsetTop);
+boxes.forEach((el, i) => {
+  for (const o of boxes.slice(0, i)) {
+    const xOverlap = el.offsetLeft < o.offsetLeft + o.offsetWidth + 20 && o.offsetLeft < el.offsetLeft + el.offsetWidth + 20;
+    if (xOverlap && el.offsetTop < o.offsetTop + o.offsetHeight + 30) el.style.top = o.offsetTop + o.offsetHeight + 30 + "px";
+  }
+});
+const H = Math.max(...boxes.map((el) => el.offsetTop + el.offsetHeight)) + 40;
+canvas.style.height = H + "px";
+const page = document.createElement("style");
+page.textContent = `@page { size: 1560px ${document.documentElement.scrollHeight + 10}px; margin: 0; }`;
+document.head.appendChild(page);
+
+function center(el) { return { x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2 }; }
+// Point where the line from the card's center towards `to` leaves the card's border
+function edge(el, to) {
+  const c = center(el), dx = to.x - c.x, dy = to.y - c.y;
+  const t = Math.min(el.offsetWidth / 2 / Math.abs(dx || 1e-9), el.offsetHeight / 2 / Math.abs(dy || 1e-9));
+  return { x: c.x + dx * t, y: c.y + dy * t };
+}
+// Crow's foot symbol at point e, u = unit vector pointing away from the card
+function foot(e, u, kind) {
+  const n = { x: -u.y, y: u.x }, at = (d, s = 0) => `${e.x + u.x * d + n.x * s},${e.y + u.y * d + n.y * s}`;
+  const bar = (d) => `<path d="M${at(d, -7)}L${at(d, 7)}"/>`;
+  const many = `<path d="M${at(0, -8)}L${at(13)}M${at(0)}L${at(13)}M${at(0, 8)}L${at(13)}"/>`;
+  const ring = (d) => { const [x, y] = at(d).split(","); return `<circle cx="${x}" cy="${y}" r="4.5"/>`; };
+  return { "1": bar(7) + bar(13), "01": bar(7) + ring(18), "1n": many + bar(18), "0n": many + ring(22) }[kind];
+}
+function draw() {
+  svg.innerHTML = L.map(([a, b, key, ca, cb]) => {
+    const p = edge(cards[a], center(cards[b])), q = edge(cards[b], center(cards[a]));
+    const len = Math.hypot(q.x - p.x, q.y - p.y) || 1, u = { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
+    const dash = ca ? "" : ' stroke-dasharray="6 5"';
+    return `<line x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"${dash}/>` +
+      (ca ? foot(p, u, ca) + foot(q, { x: -u.x, y: -u.y }, cb) : "") +
+      `<text x="${(p.x + q.x) / 2}" y="${(p.y + q.y) / 2}" text-anchor="middle">${key}</text>`;
+  }).join("");
+}
+draw();
+
+// Drag cards around
+let drag = null;
+canvas.addEventListener("pointerdown", (e) => {
+  const el = e.target.closest(".card"); if (!el) return;
+  drag = { el, dx: e.clientX - el.offsetLeft, dy: e.clientY - el.offsetTop };
+  el.classList.add("dragging"); el.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  drag.el.style.left = Math.max(0, e.clientX - drag.dx) + "px";
+  drag.el.style.top = Math.max(0, e.clientY - drag.dy) + "px";
+  draw();
+});
+canvas.addEventListener("pointerup", () => { if (drag) drag.el.classList.remove("dragging"); drag = null; });
+
+// Goal filter: dim tables without that tag, highlight the fields that matter
+document.querySelectorAll(".filters button").forEach((btn) => btn.addEventListener("click", () => {
+  const f = btn.dataset.f;
+  document.querySelectorAll(".filters button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+  for (const el of Object.values(cards)) {
+    const hit = f === "all" || el.dataset.tags.split(" ").includes(f) || el.classList.contains("hub");
+    el.classList.toggle("dim", !hit);
+    el.querySelectorAll("li").forEach((li) => li.classList.toggle("hl", f !== "all" && li.dataset.tags.split(" ").includes(f)));
+  }
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.claude/
+node_modules/
+tools/demo-video/build/
+tools/demo-video/assets/music/*.mp3
+.streamlit/secrets.toml
+.env

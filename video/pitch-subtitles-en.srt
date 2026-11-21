@@ -1,0 +1,143 @@
+1
+00:00:00,600 --> 00:00:04,270
+The Asylsozialdienst of the City of Bern is paid only when a
+
+2
+00:00:04,310 --> 00:00:07,671
+refugee reaches an integration goal on time: a language
+
+3
+00:00:07,711 --> 00:00:11,320
+certificate, a job or an apprenticeship, and a year without
+
+4
+00:00:11,360 --> 00:00:12,383
+social assistance.
+
+5
+00:00:12,423 --> 00:00:15,596
+Today, nobody can see who is on track.
+
+6
+00:00:15,990 --> 00:00:19,923
+Our Integrations-Cockpit works only with the Excel exports the
+
+7
+00:00:19,963 --> 00:00:23,205
+service already has – here with synthetic demo data.
+
+8
+00:00:23,245 --> 00:00:27,133
+They go in as they come, with German column names and Swiss
+
+9
+00:00:27,173 --> 00:00:27,532
+dates.
+
+10
+00:00:27,572 --> 00:00:31,544
+The tool recognises every file by its columns and lists what
+
+11
+00:00:31,584 --> 00:00:32,921
+is missing or wrong.
+
+12
+00:00:33,988 --> 00:00:37,584
+For every client it computes the deadline of each goal and
+
+13
+00:00:37,624 --> 00:00:41,409
+shows a traffic light: green reached, yellow on track, red at
+
+14
+00:00:41,449 --> 00:00:41,672
+risk.
+
+15
+00:00:41,712 --> 00:00:45,373
+The same for work, and for the financial independence of the
+
+16
+00:00:45,413 --> 00:00:46,400
+whole household.
+
+17
+00:00:49,303 --> 00:00:52,996
+A social worker opens it on Monday and gets a call list: red
+
+18
+00:00:53,036 --> 00:00:56,729
+cases first, then the nearest deadline, each with the reason
+
+19
+00:00:56,769 --> 00:00:57,702
+in plain words.
+
+20
+00:01:04,918 --> 00:01:06,905
+It also finds money.
+
+21
+00:01:06,945 --> 00:01:10,771
+In the demo data, twenty-four people proved their A1 level on
+
+22
+00:01:10,811 --> 00:01:13,876
+time, but the goal was never recorded as reached.
+
+23
+00:01:13,916 --> 00:01:16,428
+Each of them is a payment to check.
+
+24
+00:01:17,481 --> 00:01:19,660
+Level two asks why.
+
+25
+00:01:19,700 --> 00:01:23,764
+The tool compares groups – never individuals, and never groups
+
+26
+00:01:23,804 --> 00:01:24,889
+smaller than ten.
+
+27
+00:01:24,929 --> 00:01:28,287
+Literacy in Latin script, schooling, motivation and
+
+28
+00:01:28,327 --> 00:01:30,886
+psychological burden make a difference.
+
+29
+00:01:30,926 --> 00:01:35,122
+Motivation and burden come from the free-text reports, read by
+
+30
+00:01:35,162 --> 00:01:37,212
+an AI model that runs locally.
+
+31
+00:01:38,281 --> 00:01:41,891
+Everything goes back out as Excel, for daily work.
+
+32
+00:01:41,931 --> 00:01:45,512
+Next month: the same files, the same clicks.
+
+33
+00:01:46,070 --> 00:01:49,805
+Nothing leaves the network of the service: it runs on one
+
+34
+00:01:49,845 --> 00:01:51,675
+computer, and so does the AI.
+
+35
+00:01:51,715 --> 00:01:55,631
+Integrations-Cockpit – from Excel exports to “who do I call
+
+36
+00:01:55,671 --> 00:01:56,342
+this week?

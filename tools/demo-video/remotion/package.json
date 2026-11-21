@@ -1,0 +1,8 @@
+{
+  "name": "integrations-cockpit-cards",
+  "private": true,
+  "description": "Animated title cards for the Integrations-Cockpit pitch video (node_modules linked from C:/claude/video-tools/remotion-studio)",
+  "scripts": {
+    "dev": "remotion studio"
+  }
+}

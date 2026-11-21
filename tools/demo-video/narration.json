@@ -1,0 +1,31 @@
+{
+  "voices": {
+    "en": "en-US-AriaNeural"
+  },
+  "scenes": {
+    "intro": {
+      "en": "The Asylsozialdienst of the City of Bern is paid only when a refugee reaches an integration goal on time: a language certificate, a job or an apprenticeship, and a year without social assistance. Today, nobody can see who is on track."
+    },
+    "data": {
+      "en": "Our Integrations-Cockpit works only with the Excel exports the service already has – here with synthetic demo data. They go in as they come, with German column names and Swiss dates. The tool recognises every file by its columns and lists what is missing or wrong."
+    },
+    "cockpit": {
+      "en": "For every client it computes the deadline of each goal and shows a traffic light: green reached, yellow on track, red at risk. The same for work, and for the financial independence of the whole household."
+    },
+    "calls": {
+      "en": "A social worker opens it on Monday and gets a call list: red cases first, then the nearest deadline, each with the reason in plain words."
+    },
+    "money": {
+      "en": "It also finds money. In the demo data, twenty-four people proved their A1 level on time, but the goal was never recorded as reached. Each of them is a payment to check."
+    },
+    "patterns": {
+      "en": "Level two asks why. The tool compares groups – never individuals, and never groups smaller than ten. Literacy in Latin script, schooling, motivation and psychological burden make a difference. Motivation and burden come from the free-text reports, read by an AI model that runs locally."
+    },
+    "excel": {
+      "en": "Everything goes back out as Excel, for daily work. Next month: the same files, the same clicks."
+    },
+    "outro": {
+      "en": "Nothing leaves the network of the service: it runs on one computer, and so does the AI. Integrations-Cockpit – from Excel exports to “who do I call this week?”"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+# Integrations-Cockpit – Regeln und Annahmen.
+# Alles, was in der Challenge-Beschreibung nicht eindeutig ist, steht hier und kann
+# ohne Codeänderung angepasst werden, sobald der Asylsozialdienst es geklärt hat.
+
+current_clients:
+  # Aktuelle Klient:innen = Zuständigkeitsende leer oder >= Stichtag.
+  require_responsibility_active: true
+  # Nach "Datum Übergang Gemeindezuständigkeit" ist der ASD nicht mehr zuständig.
+  exclude_after_handover: true
+
+status:
+  # "B-FL+5", "VA+7" usw. werden auf den Grundstatus abgebildet (Bedeutung des Suffix offen).
+  strip_suffix_pattern: '\+\d+$'
+  # Status S und N sind nicht Teil der Ziele.
+  eligible: [VA, F-FL, B-FL, B-RSFL, B-SL]
+
+entry:
+  event: "Aufenthalt (Einreise)"
+  fallback_events: ["Aufenthalt (Geburt)"]
+  # Bei mehreren Einreise-Ereignissen: earliest | latest
+  pick: earliest
+  application_event_pattern: '(?i)^asylgesuch'
+
+responsibility:
+  # Nur falls "Zuständigkeitsende" im Export fehlt: selbst berechnen.
+  years_from_application: {B-FL: 5, B-RSFL: 5, B-SL: 5}
+  years_from_entry: {VA: 7, F-FL: 7}
+  # Ab 01.01.2027 gelten 5 statt 7 Jahre – Annahme: für Einreisen ab diesem Datum.
+  rule_change_date: 2027-01-01
+  years_from_entry_after_change: {VA: 5, F-FL: 5}
+
+goal1:
+  label: "Ziel 1 · Sprache A1 innert 3 Jahren ab Einreise"
+  short: "A1"
+  deadline_years: 3
+  min_age: 16
+  # Zu welchem Zeitpunkt muss die Person 16 sein? entry | deadline | stichtag
+  age_reference: deadline
+  min_level: A1
+  languages: [Deutsch, Französisch]
+  # Nachweisarten (Spalte "Art" in Sprachstand), die für Ziel 1 zählen.
+  # Die echten Werte kennen wir noch nicht (Export fehlt) – leere Liste = alle zählen.
+  accepted_proofs:
+    - Zertifikat telc
+    - Zertifikat fide
+    - Muttersprache
+    - Schulbesuch Schweiz
+    - Abgeschlossene Ausbildung
+  # Einträge in Integrationszielerreichung, die als "Ziel 1 erreicht" gelten.
+  reached_goal_pattern: '(?i)sprach|\bA1\b|ziel\s*1'
+  # Nicht erreicht und höchstens so viele Monate bis zur Frist = rot (gefährdet).
+  risk_months: 6
+
+goal2:
+  label: "Ziel 2 · 6 Monate Arbeit ≥ 60 % oder Ausbildung Sek II / Tertiär vor Zuständigkeitsende"
+  short: "Ziel 2 (Arbeit/Ausbildung)"
+  min_age: 16
+  age_reference: deadline
+  min_pensum: 60
+  min_months: 6
+  # Gleichzeitige Anstellungen zusammenzählen (2 × 30 % = 60 %)?
+  sum_parallel_jobs: true
+  # Unterbruch zwischen zwei Anstellungen, der noch als "am Stück" gilt.
+  max_gap_days: 0
+  # Leere Liste = alle Erwerbsstatus zählen.
+  erwerbsstatus_counts: [unselbstständig, selbstständig]
+  # "1. Arbeitsmarkt": im Export gibt es kein Feld dafür – Arbeitgeber, die so heissen, zählen nicht.
+  exclude_employer_pattern: '(?i)beschäftigungsprogramm|integrationsprogramm|arbeitsintegration|einsatzprogramm'
+  education_types: ["Sek II", "Tertiär"]
+  # Zählt die Ausbildung ab Beginn oder erst mit Abschluss? start | abschluss
+  education_counts_from: start
+  reached_goal_pattern: '(?i)erwerb|ausbildung|arbeit|ziel\s*2'
+  risk_months: 12
+
+goal3:
+  label: "Ziel 3 · 12 Monate ohne Sozialhilfe für den ganzen Haushalt vor Zuständigkeitsende"
+  short: "Ziel 3 (12 Monate ohne Sozialhilfe)"
+  min_months: 12
+  # Welche Unterstützungsarten gelten als Sozialhilfe?
+  assistance_types: [Sozialhilfe, Nothilfe]
+  # Massgebende Frist des Haushalts: dossiertraeger | latest | earliest (über alle Mitglieder)
+  household_deadline: dossiertraeger
+  reached_goal_pattern: '(?i)sozialhilfe|wirtschaftlich|finanz|ziel\s*3'
+  risk_months: 12
+
+level2:
+  # Nur Zielgruppe, deren Frist abgelaufen ist (Ergebnis bekannt) – auch frühere Kohorten.
+  population: frist_abgelaufen
+  # Gruppen mit weniger Personen werden nicht ausgewiesen (Schutz vor Rückschluss auf Einzelne).
+  min_group_size: 10
+  top_combinations: 12
+  # Muster nach Fallführung = Auswertung von Mitarbeitenden; nur mit Zustimmung einschalten.
+  include_case_worker: false

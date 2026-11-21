@@ -1,0 +1,23 @@
+<section id="ai" class="dark">
+<div class="head">
+<p class="eyebrow">AI, used carefully</p>
+<h2>A local model reads the free-text Situationsanalyse</h2>
+</div>
+<div class="flow">
+<div class="step rise" style="--i:0"><p class="step-title">Word or PDF report</p><p class="step-note">Written per household at entry</p></div>
+<x-shape kind="arrow-right" class="arrow"></x-shape>
+<div class="step rise" style="--i:1"><p class="step-title">Names removed</p><p class="step-note">Also phone, address and numbers</p></div>
+<x-shape kind="arrow-right" class="arrow"></x-shape>
+<div class="step rise" style="--i:2"><p class="step-title">Local model</p><p class="step-note">Runs on the ASD computer; nothing is sent out</p></div>
+<x-shape kind="arrow-right" class="arrow"></x-shape>
+<div class="step rise" style="--i:3"><p class="step-title">5 features</p><p class="step-note">Burden, motivation, pace, childcare, network</p></div>
+<x-shape kind="arrow-right" class="arrow"></x-shape>
+<div class="step rise" style="--i:4"><p class="step-title">Human review</p><p class="step-note">The social worker checks and corrects</p></div>
+</div>
+<div class="facts">
+<div class="fact"><p class="fact-text"><b>90 %</b> correct on average (86–94 % per feature), measured on 112 demo people whose truth we know</p></div>
+<div class="fact"><p class="fact-text">When a report says nothing, the model tends to guess – so a person always reviews before results are used</p></div>
+<div class="fact"><p class="fact-text">Output is an Excel table – the AI never decides anything about a client</p></div>
+</div>
+<aside>The Situationsanalyse is free text, so we use AI – carefully. Before the model sees a report, names, phone numbers, addresses and ID numbers are removed. The model runs locally with Ollama on the ASD’s own computer, so nothing leaves the network. It turns each report into five features: psychological burden, motivation, learning pace, childcare as an obstacle, and social network. On our demo data it is right 90 percent of the time. But we saw that when a report says nothing, it tends to guess. That is why a social worker reviews the table before it is used – the AI never decides anything about a client.</aside>
+</section>
