@@ -212,10 +212,8 @@ def extract_documents(
 
     cache = _load_cache(cache_path)
     lock = threading.Lock()
-    done = 0
 
     def run(item: tuple[ParsedDocument, PersonSection]) -> dict:
-        nonlocal done
         doc, person = item
         key = hashlib.sha256(f"{method}|{model}|{person.text}".encode()).hexdigest()
         if key not in cache:
@@ -223,16 +221,17 @@ def extract_documents(
             with lock:
                 cache[key] = value
                 _append_cache(cache_path, key, value)
-        with lock:
-            done += 1
-            if progress:
-                progress(done, len(sections))
         return {"Zemis-Nr.": person.zemis, "Dossier-Nr.": doc.dossier, "Datei": doc.name,
                 "Methode": f"LLM lokal ({model})" if method == "llm" else "Regeln",
                 **{FEATURES[f]["label"]: v for f, v in cache[key].items()}, "Hinweis": person.note or None}
 
+    # progress runs on the calling thread: Streamlit refuses UI calls from worker threads (NoSessionContext)
+    rows: list[dict] = []
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        rows = list(pool.map(run, sections))
+        for done, row in enumerate(pool.map(run, sections), start=1):
+            rows.append(row)
+            if progress:
+                progress(done, len(sections))
     return pd.DataFrame(rows)
 
 
