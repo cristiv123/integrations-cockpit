@@ -12,6 +12,7 @@ import streamlit as st
 
 from cockpit.base import STATUS_AT_RISK, STATUS_MISSED, STATUS_ON_TRACK, STATUS_ORDER, STATUS_REACHED, STATUS_REACHED_LATE, prepare_persons, restrict
 from cockpit.export import build_workbook, unit_table
+from cockpit.fallakte import PENSUM_HERVORHEBUNG, SPUREN, build_fallakte, person_options
 from cockpit.goal1 import evaluate_goal1
 from cockpit.goal2 import evaluate_goal2
 from cockpit.goal3 import evaluate_goal3
@@ -95,6 +96,35 @@ def date_config(df: pd.DataFrame) -> dict:
     return {c: st.column_config.DateColumn(format="DD.MM.YYYY") for c in df.columns if c in DATE_COLS or str(c).startswith("Frist")}
 
 
+def fallakte_chart(fa) -> alt.LayerChart:
+    """Zeitstrahl einer Person: Balken (Kurse, Arbeit, Sozialhilfe), Punkte (Sprache), Marker-Linien."""
+    ev = fa.ereignisse
+    y = alt.Y("spur:N", title=None, scale=alt.Scale(domain=SPUREN))
+    layers: list = []
+    balken = ev[ev["typ"] == "balken"] if not ev.empty else ev
+    if not balken.empty:
+        layers.append(alt.Chart(balken).mark_bar(height=16, cornerRadius=3).encode(
+            x=alt.X("start:T", title=None), x2="ende:T", y=y,
+            color=alt.Color("hervorgehoben:N", scale=alt.Scale(domain=[True, False], range=["#1F4E78", "#9DB3C8"]), legend=None),
+            tooltip=[alt.Tooltip("spur:N", title="Spur"), alt.Tooltip("label:N", title="Eintrag"),
+                     alt.Tooltip("start:T", title="von", format="%d.%m.%Y"), alt.Tooltip("ende:T", title="bis", format="%d.%m.%Y"),
+                     alt.Tooltip("detail:N", title="Detail")]))
+    punkte = ev[ev["typ"] == "punkt"] if not ev.empty else ev
+    if not punkte.empty:
+        base = alt.Chart(punkte).encode(x=alt.X("start:T", title=None), y=y)
+        layers.append(base.mark_point(filled=True, size=120, color="#2E7D32").encode(
+            tooltip=[alt.Tooltip("start:T", title="Datum", format="%d.%m.%Y"), alt.Tooltip("label:N", title="Niveau"),
+                     alt.Tooltip("detail:N", title="Detail")]))
+        layers.append(base.mark_text(dy=-12, color="#2E7D32", fontWeight="bold").encode(text="label:N"))
+    if fa.marker:
+        md = pd.DataFrame([{"name": n, "datum": d} for n, d in fa.marker.items()])
+        layers.append(alt.Chart(md).mark_rule(strokeDash=[4, 4], color="#C62828").encode(
+            x="datum:T", tooltip=[alt.Tooltip("name:N", title="Marke"), alt.Tooltip("datum:T", title="Datum", format="%d.%m.%Y")]))
+        layers.append(alt.Chart(md).mark_text(align="left", dx=3, dy=-4, color="#C62828", fontSize=10, baseline="top").encode(
+            x="datum:T", y=alt.value(6), text="name:N"))
+    return alt.layer(*layers).properties(height=240)
+
+
 with st.sidebar:
     st.header("Daten")
     source = st.radio("Quelle", ["Synthetische Demodaten", "Eigene Exporte hochladen"], label_visibility="collapsed")
@@ -172,9 +202,9 @@ else:
                         f"{plural} mit abgelaufener Zuständigkeit (inkl. frühere Klient:innen).")
 
 if view == "Leitung":
-    tab_names = ["Cockpit", "Übersicht", "Muster", "Situationsanalysen", "Liste", "Datenqualität", "Annahmen"]
+    tab_names = ["Cockpit", "Fallakte", "Übersicht", "Muster", "Situationsanalysen", "Liste", "Datenqualität", "Annahmen"]
 else:
-    tab_names = ["Wen rufe ich an?", "Cockpit", "Übersicht", "Liste", "Datenqualität", "Annahmen"]
+    tab_names = ["Wen rufe ich an?", "Cockpit", "Fallakte", "Übersicht", "Liste", "Datenqualität", "Annahmen"]
 tabs = dict(zip(tab_names, st.tabs(tab_names)))
 
 if "Wen rufe ich an?" in tabs:
@@ -201,6 +231,35 @@ with tabs["Cockpit"]:
             summary_cols[i].markdown(f"**{GOALS[g][0]}**  \n🔴 {open_counts.get('rot', 0)} · 🟡 {open_counts.get('gelb', 0)} · 🟢 {open_counts.get('grün', 0)}")
         table = with_icons(matrix_table(matrix))
         st.dataframe(table, hide_index=True, width="stretch", height=520, column_config=date_config(table))
+
+with tabs["Fallakte"]:
+    opts = person_options(results)
+    if not opts:
+        st.info("Keine Personen im aktuellen Datensatz.")
+    else:
+        labels = {g: name for g, (name, _) in GOALS.items()}
+        fmt = {o["klientennummer"]:
+               f"{o['klientennummer']} · {o['verfahrensstand'] or '—'} · Alter {o['alter'] if o['alter'] is not None else '—'}"
+               for o in opts}
+        sel = st.selectbox("Klient:in", [o["klientennummer"] for o in opts], format_func=lambda k: fmt.get(k, k))
+        fa = build_fallakte(loaded.tables, stichtag, sel, results, labels)
+
+        ampel_cols = st.columns(len(fa.ziele) or 1)
+        for col, z in zip(ampel_cols, fa.ziele):
+            with col.container(border=True):
+                st.markdown(f"**{z['label']}**")
+                st.markdown(f"## {AMPEL_ICON.get(z['ampel'], '⚪')}")
+                st.caption(z["status"] or "Nicht anwendbar")
+
+        st.divider()
+        st.markdown("**Zeitstrahl**")
+        if fa.ereignisse.empty and not fa.marker:
+            st.caption("Keine datierten Einträge für diese Person.")
+        else:
+            st.altair_chart(fallakte_chart(fa), width="stretch")
+            st.caption(f"Punkte = Sprachnachweise (mit Niveau). Balken = Kurse/Ausbildung, Anstellungen "
+                       f"(≥ {int(PENSUM_HERVORHEBUNG)} % dunkelblau hervorgehoben) und Sozialhilfe-Perioden des Haushalts. "
+                       "Senkrechte Linien: Einreise, Frist A1, Zuständigkeitsende, Heute.")
 
 with tabs["Übersicht"]:
     left, right = st.columns(2)
