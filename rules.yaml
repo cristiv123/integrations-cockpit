@@ -9,8 +9,10 @@ current_clients:
   exclude_after_handover: true
 
 status:
-  # "B-FL+5", "VA+7" usw. werden auf den Grundstatus abgebildet (Bedeutung des Suffix offen).
-  strip_suffix_pattern: '\+\d+$'
+  # "B-FL+5", "VA+7" (Suffix "+Zahl") und Klammer-Zusätze wie "N (Asylsuchende)" oder
+  # "VA (vorläufig aufgenommen)" werden auf den Grundstatus abgebildet (Bedeutung offen),
+  # damit der Status mit 'eligible' unten übereinstimmt. Auch beide Zusätze zusammen.
+  strip_suffix_pattern: '(\s*\+\d+|\s*\([^)]*\))+$'
   # Status S und N sind nicht Teil der Ziele.
   eligible: [VA, F-FL, B-FL, B-RSFL, B-SL]
 

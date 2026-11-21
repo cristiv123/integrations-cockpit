@@ -122,3 +122,21 @@ def test_missing_required_table():
 @pytest.mark.parametrize("value,expected", [("A1", 1), ("a2", 2), ("B1.1", 3), ("C2", 6), ("A0", 0), ("x", None), (None, None)])
 def test_level_rank(value, expected):
     assert level_rank(value) == expected
+
+
+def test_status_mit_suffix_und_klammer_kommen_in_den_scope():
+    """"B-RSFL+7"/"VA (...)" sind gültige Zielstatus und dürfen nicht an Suffix/Klammer scheitern."""
+    res, p = run(
+        [klient(1, status="B-RSFL+7"), klient(2, status="VA (vorläufig aufgenommen)"), klient(3, status="N (Asylsuchende)")],
+        [entry(1, "2022-01-10"), entry(2, "2022-01-10"), entry(3, "2022-01-10")],
+        [],
+    )
+    # Suffix "+7" entfernt -> B-RSFL ist eligible -> im Scope, nicht "Nicht anwendbar"
+    assert p.loc["1", "status_basis"] == "B-RSFL"
+    assert p.loc["1", "im_scope"] and p.loc["1", "status"] != STATUS_NA
+    # Klammer-Zusatz entfernt -> VA ist eligible -> im Scope
+    assert p.loc["2", "status_basis"] == "VA"
+    assert p.loc["2", "im_scope"] and p.loc["2", "status"] != STATUS_NA
+    # N bleibt (korrekt) ausserhalb der Ziele, wird aber sauber auf "N" normalisiert
+    assert p.loc["3", "status_basis"] == "N"
+    assert not p.loc["3", "im_scope"]
