@@ -163,7 +163,7 @@ reusable from the command line. Only `app.py` knows about widgets, caching and s
 |---|---|---|---|
 | `cockpit/schema.py` | 213 | Declares the 11 export tables (+ the Situationsanalyse feature table): canonical field → accepted header aliases, signature fields, date fields | `TABLES`, `KEY_COLUMNS`, `export_headers()` |
 | `cockpit/ingest.py` | 206 | Reads workbooks, detects each sheet's table, maps headers, cleans keys, parses dates, checks referential integrity | `load_exports()`, `load_directory()`, `LoadResult`, `Issue` |
-| `cockpit/rules.py` | 10 | Loads `rules.yaml` | `load_rules()` |
+| `cockpit/rules.py` | 17 | Reads and parses `rules.yaml` | `read_rules_text()`, `rules_from_text()`, `load_rules()` |
 | `cockpit/base.py` | 246 | Shared building blocks: one row per client, status, entry date, responsibility end, scope, traffic light, summaries | `prepare_persons()`, `apply_scope()`, `classify()`, `finish()`, `restrict()`, `GoalResult` |
 | `cockpit/goal1.py` | 103 | Goal 1: language A1 within 3 years of entry | `evaluate_goal1()` |
 | `cockpit/goal2.py` | 168 | Goal 2: 6 months of ≥ 60 % work, or Sek II / tertiary education | `evaluate_goal2()`, `qualifying_runs()` |
@@ -182,68 +182,35 @@ number**; `base.with_client()` translates it into the internal **Klientennummer*
 `Klient` table. The **Dossier-Nr.** groups people into a household (*Unterstützungseinheit*).
 
 ```mermaid
-erDiagram
-    KLIENT ||--o{ ASYLVERFAHRENSSTAND : "klientennummer"
-    KLIENT ||--o{ ASYLGESCHAEFTSDATEN : "zemis / klientennummer"
-    KLIENT ||--o{ SPRACHSTAND : "zemis / klientennummer"
-    KLIENT ||--o{ ERWERB : "zemis / klientennummer"
-    KLIENT ||--o{ ZEMIS_TAETIGKEIT : "zemis / klientennummer"
-    KLIENT ||--o{ INTEGRATIONSFOERDERUNG : "zemis / klientennummer"
-    KLIENT ||--o{ UNTERBRINGUNG : "klientennummer"
-    KLIENT ||--o{ INTEGRATIONSZIELERREICHUNG : "zemis"
-    KLIENT ||--o| SITUATIONSANALYSE_MERKMALE : "zemis"
-    DOSSIER ||--|{ KLIENT : "dossier"
-    DOSSIER ||--|{ DOSSIERPERSON : "dossier"
-    DOSSIER ||--o{ FINANZIELLE_UNTERSTUETZUNG : "dossier"
+flowchart LR
+    subgraph HH["Household"]
+        direction TB
+        DP["<b>Dossierperson</b><br/>rolle · beziehung<br/>(Dossierträger/-in, ...) · von · bis"]
+        FU["<b>Finanzielle Unterstützung</b><br/>unterstuetzung (Sozialhilfe, ...)<br/>gueltig_von · gueltig_bis"]
+    end
 
-    KLIENT {
-        string klientennummer PK
-        string zemis
-        string dossier FK
-        date zust_ende "responsibility end"
-        date uebergang_gemeinde
-        string status_aktuell
-        string fallfuehrung "social worker"
-        date geburtsdatum
-        string nationalitaet
-        int schuljahre
-        string lateinisch_alphabetisiert
-    }
-    ASYLGESCHAEFTSDATEN {
-        string geschaeftsart "e.g. Aufenthalt (Einreise)"
-        date ereignisdatum
-    }
-    SPRACHSTAND {
-        string sprache
-        string niveau "A0..C2"
-        string nachweis "proof type"
-        date datum
-    }
-    ERWERB {
-        date von
-        date bis
-        float pensum "percent"
-        string erwerbsstatus
-        string arbeitgeber
-    }
-    FINANZIELLE_UNTERSTUETZUNG {
-        string unterstuetzung "Sozialhilfe, ..."
-        date gueltig_von
-        date gueltig_bis
-    }
-    DOSSIERPERSON {
-        string rolle
-        string beziehung "Dossiertraeger/-in, ..."
-        date von
-        date bis
-    }
-    INTEGRATIONSZIELERREICHUNG {
-        string ziel
-        date erreicht_am "goal recorded as reached"
-    }
+    K["<b>Klient</b><br/>klientennummer (key) · zemis · dossier<br/>zust_ende (responsibility end)<br/>uebergang_gemeinde · status_aktuell<br/>fallfuehrung (social worker)<br/>geburtsdatum · nationalitaet<br/>schuljahre · lateinisch_alphabetisiert"]
+
+    subgraph PC["Per client"]
+        direction TB
+        AV["<b>Asylverfahrensstand</b><br/>status · gueltig_ab · gueltig_bis"]
+        AG["<b>Asylgeschäftsdaten</b><br/>geschaeftsart (e.g. Aufenthalt (Einreise))<br/>ereignisdatum"]
+        SP["<b>Sprachstand</b><br/>sprache · niveau (A0..C2)<br/>nachweis (proof type) · datum"]
+        ER["<b>Erwerb</b><br/>von · bis · pensum (%)<br/>erwerbsstatus · arbeitgeber"]
+        ZT["<b>ZEMIS Tätigkeit</b><br/>arbeitsbeginn · betrieb"]
+        IF["<b>Integrationsförderung und Ausbildung</b><br/>art · start · abschluss · stunden"]
+        UB["<b>Unterbringung</b><br/>art · von · bis"]
+        IZ["<b>Integrationszielerreichung</b><br/>ziel · erreicht_am (recorded as reached)"]
+        SA["<b>Situationsanalyse_Merkmale</b> (app-defined)<br/>5 features from the free-text reports"]
+    end
+
+    DP & FU -- "dossier" --- K
+    K --- AV & AG & SP & ER & ZT & IF & UB & IZ & SA
 ```
 
-The diagram shows the most important fields only; [`cockpit/schema.py`](../../cockpit/schema.py)
+One household (dossier) has several clients; each client has any number of rows in the
+tables on the right, linked by Klientennummer or Zemis-Nr. Each box lists the most important
+fields only; [`cockpit/schema.py`](../../cockpit/schema.py)
 holds the full list with every accepted header spelling. Six exports came with a template from
 the challenge organisers (`template_received: True`). The other five (Klient, Sprachstand,
 Integrationsförderung, Integrationszielerreichung, Unterbringung) were derived from the data
@@ -443,7 +410,7 @@ Jobs are prepared before the time-line computation:
 −pensum on the day after the end. This way two parallel 30 % jobs count as 60 %:
 
 ```mermaid
-flowchart LR
+flowchart TD
     J["jobs<br/>(von, bis, pensum)"] --> D["delta map<br/>+p at von<br/>−p at bis + 1 day"]
     D --> SW["sort days, running sum"]
     SW --> SEG["segments where sum ≥ 60 %"]
@@ -653,13 +620,14 @@ sequenceDiagram
 
     U->>ST: upload files / change a widget
     ST->>APP: re-run script top to bottom
+    APP->>APP: rules_text = read rules.yaml
     APP->>C: load(files)
     alt cache miss (new bytes)
         C->>CK: ingest.load_exports
         CK-->>C: LoadResult
     end
     C-->>APP: LoadResult
-    APP->>C: evaluate_all(files, stichtag)
+    APP->>C: evaluate_all(files, stichtag, rules_text)
     alt cache miss
         C->>CK: prepare_persons, goal1-3, cockpit_matrix
         CK-->>C: results, errors, matrix
@@ -669,7 +637,7 @@ sequenceDiagram
         APP->>CK: restrict(result, worker) per goal
     end
     opt management role (Muster tab)
-        APP->>C: level2_for(files, stichtag, goal)
+        APP->>C: level2_for(files, stichtag, goal, rules_text)
     end
     APP-->>ST: render metrics, tabs, tables, charts
     ST-->>U: updated page
@@ -678,10 +646,9 @@ sequenceDiagram
     CK-->>U: .xlsx download
 ```
 
-The cache keys are the tuple of `(file name, file bytes)` and the Stichtag, so changing the date
-or the files invalidates exactly what depends on them. Switching role, goal or tab does not
-re-compute any goal. `rules.yaml` is **not** part of the key; see
-[section 15](#15-rules-and-configuration).
+The cache keys are the tuple of `(file name, file bytes)`, the Stichtag and the text of
+`rules.yaml`, so changing the date, the files or a rule invalidates exactly what depends on
+them. Switching role, goal or tab does not re-compute any goal.
 
 ### 14.2 Screen structure
 
@@ -723,11 +690,11 @@ with a comment explaining it. The main keys:
 
 The *Annahmen* (assumptions) tab shows the file, and the export contains it.
 
-**Caching pitfall.** `app.py` reads `rules.yaml` on every run, but `evaluate_all()` and
-`level2_for()` call `load_rules()` *inside* functions cached on `(files, stichtag)`. An edited
-rules file is therefore displayed at once and used only after the cache is cleared (Streamlit
-menu → *Clear cache*) or the process restarts. Adding a hash of the file's content to the cache
-key would remove the pitfall.
+`app.py` reads the text of `rules.yaml` on every run and passes it to the cached functions
+`evaluate_all()` and `level2_for()` as an argument. The text is therefore part of the cache key:
+an edited rules file takes effect at the next interaction, and an unchanged one costs no
+recomputation. `cockpit/rules.py` offers `read_rules_text()`, `rules_from_text()` and
+`load_rules()` (the two combined, used by the tests).
 
 ## 16. Synthetic data generator
 
@@ -789,7 +756,7 @@ authenticating reverse proxy if it is ever exposed beyond `localhost`.
 `tools/demo-video/` generates the pitch video reproducibly. It is not needed to run the app.
 
 ```mermaid
-flowchart LR
+flowchart TD
     N[["narration.json"]] --> TTS["tts.py<br/>edge-tts neural voice<br/>→ audio + durations"]
     DECK["pitch/deck"] --> BS["build_slides.py<br/>slides as local pages"]
     TTS & BS --> REC["record.mjs<br/>Node drives Chrome over CDP;<br/>Page.startScreencast → frames"]

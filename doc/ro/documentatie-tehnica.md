@@ -171,7 +171,7 @@ de reguli și întoarce DataFrame-uri sau dataclass-uri. Așa logica se testeaz�
 |---|---|---|---|
 | `cockpit/schema.py` | 213 | Declară cele 11 tabele de export (+ tabelul cu caracteristicile Situationsanalyse): câmp canonic → antete acceptate, câmpuri-semnătură, câmpuri de tip dată | `TABLES`, `KEY_COLUMNS`, `export_headers()` |
 | `cockpit/ingest.py` | 206 | Citește registrele, detectează tabelul fiecărei foi, mapează antetele, curăță cheile, parsează datele, verifică integritatea referențială | `load_exports()`, `load_directory()`, `LoadResult`, `Issue` |
-| `cockpit/rules.py` | 10 | Încarcă `rules.yaml` | `load_rules()` |
+| `cockpit/rules.py` | 17 | Citește și parsează `rules.yaml` | `read_rules_text()`, `rules_from_text()`, `load_rules()` |
 | `cockpit/base.py` | 246 | Elemente comune: un rând per client, statut, data intrării, sfârșitul responsabilității, perimetru, semafor, totaluri | `prepare_persons()`, `apply_scope()`, `classify()`, `finish()`, `restrict()`, `GoalResult` |
 | `cockpit/goal1.py` | 103 | Obiectivul 1: limba la nivel A1 în 3 ani de la intrare | `evaluate_goal1()` |
 | `cockpit/goal2.py` | 168 | Obiectivul 2: 6 luni de muncă ≥ 60 % sau formare Sek II / terțiară | `evaluate_goal2()`, `qualifying_runs()` |
@@ -190,68 +190,35 @@ Cele unsprezece exporturi sunt legate prin trei chei. Unele tabele au doar **num
 tabelul `Klient`. **Dossier-Nr.** grupează persoanele într-o gospodărie (*Unterstützungseinheit*).
 
 ```mermaid
-erDiagram
-    KLIENT ||--o{ ASYLVERFAHRENSSTAND : "klientennummer"
-    KLIENT ||--o{ ASYLGESCHAEFTSDATEN : "zemis / klientennummer"
-    KLIENT ||--o{ SPRACHSTAND : "zemis / klientennummer"
-    KLIENT ||--o{ ERWERB : "zemis / klientennummer"
-    KLIENT ||--o{ ZEMIS_TAETIGKEIT : "zemis / klientennummer"
-    KLIENT ||--o{ INTEGRATIONSFOERDERUNG : "zemis / klientennummer"
-    KLIENT ||--o{ UNTERBRINGUNG : "klientennummer"
-    KLIENT ||--o{ INTEGRATIONSZIELERREICHUNG : "zemis"
-    KLIENT ||--o| SITUATIONSANALYSE_MERKMALE : "zemis"
-    DOSSIER ||--|{ KLIENT : "dossier"
-    DOSSIER ||--|{ DOSSIERPERSON : "dossier"
-    DOSSIER ||--o{ FINANZIELLE_UNTERSTUETZUNG : "dossier"
+flowchart LR
+    subgraph HH["Gospodărie"]
+        direction TB
+        DP["<b>Dossierperson</b><br/>rolle · beziehung<br/>(Dossierträger/-in, ...) · von · bis"]
+        FU["<b>Finanzielle Unterstützung</b><br/>unterstuetzung (Sozialhilfe, ...)<br/>gueltig_von · gueltig_bis"]
+    end
 
-    KLIENT {
-        string klientennummer PK
-        string zemis
-        string dossier FK
-        date zust_ende "sfarsitul responsabilitatii"
-        date uebergang_gemeinde
-        string status_aktuell
-        string fallfuehrung "asistentul social"
-        date geburtsdatum
-        string nationalitaet
-        int schuljahre
-        string lateinisch_alphabetisiert
-    }
-    ASYLGESCHAEFTSDATEN {
-        string geschaeftsart "ex. Aufenthalt (Einreise)"
-        date ereignisdatum
-    }
-    SPRACHSTAND {
-        string sprache
-        string niveau "A0..C2"
-        string nachweis "tipul dovezii"
-        date datum
-    }
-    ERWERB {
-        date von
-        date bis
-        float pensum "procent"
-        string erwerbsstatus
-        string arbeitgeber
-    }
-    FINANZIELLE_UNTERSTUETZUNG {
-        string unterstuetzung "Sozialhilfe, ..."
-        date gueltig_von
-        date gueltig_bis
-    }
-    DOSSIERPERSON {
-        string rolle
-        string beziehung "Dossiertraeger/-in, ..."
-        date von
-        date bis
-    }
-    INTEGRATIONSZIELERREICHUNG {
-        string ziel
-        date erreicht_am "obiectiv inregistrat ca atins"
-    }
+    K["<b>Klient</b><br/>klientennummer (cheie) · zemis · dossier<br/>zust_ende (sfârșitul responsabilității)<br/>uebergang_gemeinde · status_aktuell<br/>fallfuehrung (asistentul social)<br/>geburtsdatum · nationalitaet<br/>schuljahre · lateinisch_alphabetisiert"]
+
+    subgraph PC["Per client"]
+        direction TB
+        AV["<b>Asylverfahrensstand</b><br/>status · gueltig_ab · gueltig_bis"]
+        AG["<b>Asylgeschäftsdaten</b><br/>geschaeftsart (ex. Aufenthalt (Einreise))<br/>ereignisdatum"]
+        SP["<b>Sprachstand</b><br/>sprache · niveau (A0..C2)<br/>nachweis (tipul dovezii) · datum"]
+        ER["<b>Erwerb</b><br/>von · bis · pensum (%)<br/>erwerbsstatus · arbeitgeber"]
+        ZT["<b>ZEMIS Tätigkeit</b><br/>arbeitsbeginn · betrieb"]
+        IF["<b>Integrationsförderung und Ausbildung</b><br/>art · start · abschluss · stunden"]
+        UB["<b>Unterbringung</b><br/>art · von · bis"]
+        IZ["<b>Integrationszielerreichung</b><br/>ziel · erreicht_am (înregistrat ca atins)"]
+        SA["<b>Situationsanalyse_Merkmale</b> (definit de aplicație)<br/>5 caracteristici din rapoartele în text liber"]
+    end
+
+    DP & FU -- "dossier" --- K
+    K --- AV & AG & SP & ER & ZT & IF & UB & IZ & SA
 ```
 
-Diagrama arată doar câmpurile importante; lista completă, cu fiecare variantă de antet acceptată,
+O gospodărie (dosar) are mai mulți clienți; fiecare client are oricâte rânduri în tabelele din
+dreapta, legate prin Klientennummer sau Zemis-Nr. Fiecare casetă arată doar câmpurile
+importante; lista completă, cu fiecare variantă de antet acceptată,
 e în [`cockpit/schema.py`](../../cockpit/schema.py). Șase exporturi au venit cu un șablon de la
 organizatori (`template_received: True`). Celelalte cinci (Klient, Sprachstand,
 Integrationsförderung, Integrationszielerreichung, Unterbringung) au fost deduse din modelul de
@@ -458,7 +425,7 @@ Joburile sunt pregătite înainte de calculul pe axa timpului:
 început, −normă în ziua de după sfârșit. Așa, două joburi paralele de 30 % se socotesc 60 %:
 
 ```mermaid
-flowchart LR
+flowchart TD
     J["joburi<br/>(von, bis, pensum)"] --> D["harta de diferențe<br/>+p la von<br/>−p la bis + 1 zi"]
     D --> SW["sortează zilele, sumă cumulată"]
     SW --> SEG["segmente cu suma ≥ 60 %"]
@@ -673,13 +640,14 @@ sequenceDiagram
 
     U->>ST: încarcă fișiere / schimbă un widget
     ST->>APP: rulează scriptul de sus până jos
+    APP->>APP: rules_text = citește rules.yaml
     APP->>C: load(files)
     alt lipsă în cache (octeți noi)
         C->>CK: ingest.load_exports
         CK-->>C: LoadResult
     end
     C-->>APP: LoadResult
-    APP->>C: evaluate_all(files, stichtag)
+    APP->>C: evaluate_all(files, stichtag, rules_text)
     alt lipsă în cache
         C->>CK: prepare_persons, goal1-3, cockpit_matrix
         CK-->>C: rezultate, erori, matrice
@@ -689,7 +657,7 @@ sequenceDiagram
         APP->>CK: restrict(result, asistent) per obiectiv
     end
     opt rol de conducere (fila Muster)
-        APP->>C: level2_for(files, stichtag, goal)
+        APP->>C: level2_for(files, stichtag, goal, rules_text)
     end
     APP-->>ST: afișează indicatori, file, tabele, grafice
     ST-->>U: pagina actualizată
@@ -698,10 +666,9 @@ sequenceDiagram
     CK-->>U: download .xlsx
 ```
 
-Cheile de cache sunt tuplul `(nume fișier, octeții fișierului)` și Stichtag, așa că schimbarea
-datei sau a fișierelor invalidează exact ce depinde de ele. Schimbarea rolului, a obiectivului
-sau a filei nu recalculează niciun obiectiv. `rules.yaml` **nu** face parte din cheie; vezi
-[secțiunea 15](#15-reguli-și-configurare).
+Cheile de cache sunt tuplul `(nume fișier, octeții fișierului)`, Stichtag și textul din
+`rules.yaml`, așa că schimbarea datei, a fișierelor sau a unei reguli invalidează exact ce
+depinde de ele. Schimbarea rolului, a obiectivului sau a filei nu recalculează niciun obiectiv.
 
 ### 14.2 Structura ecranului
 
@@ -743,11 +710,11 @@ Fiecare regulă de business pe care challenge-ul o lasă deschisă se află în
 
 Fila *Annahmen* (ipoteze) afișează fișierul, iar exportul îl conține.
 
-**Capcana cache-ului.** `app.py` citește `rules.yaml` la fiecare rulare, dar `evaluate_all()` și
-`level2_for()` apelează `load_rules()` *în interiorul* unor funcții memorate după
-`(files, stichtag)`. Un fișier de reguli modificat e deci afișat imediat, dar folosit abia după
-golirea cache-ului (meniul Streamlit → *Clear cache*) sau după repornirea procesului. Adăugarea
-unui hash al conținutului fișierului în cheia de cache ar elimina capcana.
+`app.py` citește textul din `rules.yaml` la fiecare rulare și îl transmite ca argument funcțiilor
+memorate `evaluate_all()` și `level2_for()`. Textul face deci parte din cheia de cache: un fișier
+de reguli modificat are efect la următoarea interacțiune, iar unul nemodificat nu declanșează
+niciun recalcul. `cockpit/rules.py` oferă `read_rules_text()`, `rules_from_text()` și
+`load_rules()` (cele două combinate, folosit de teste).
 
 ## 16. Generatorul de date sintetice
 
@@ -812,7 +779,7 @@ autentificare.
 rularea aplicației.
 
 ```mermaid
-flowchart LR
+flowchart TD
     N[["narration.json"]] --> TTS["tts.py<br/>voce neurală edge-tts<br/>→ audio + durate"]
     DECK["pitch/deck"] --> BS["build_slides.py<br/>slide-uri ca pagini locale"]
     TTS & BS --> REC["record.mjs<br/>Node controlează Chrome prin CDP;<br/>Page.startScreencast → cadre"]

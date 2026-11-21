@@ -413,9 +413,9 @@ Obiectivul 3 numără gospodării, nu persoane.
 Fila *Liste*, cu *Nur Personen im Scope* dezactivat, arată motivul în coloana
 *Grund nicht anwendbar*.
 
-**Am schimbat o regulă și cifrele nu s-au modificat.**
-Rezultatele sunt în cache. Deschide meniul **⋮** din dreapta sus și alege **Clear cache**, sau
-apasă `C`.
+**O regulă a fost schimbată și cifrele nu s-au modificat.**
+Reîncarcă pagina. Fila *Annahmen* arată regulile în vigoare; dacă arată încă valoarea veche,
+fișierul nu a fost salvat.
 
 **Se salvează datele undeva?**
 Nu. La închiderea browserului totul se pierde. Păstrează rezultatul Excel dacă ai nevoie de o

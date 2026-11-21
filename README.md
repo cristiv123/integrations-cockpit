@@ -19,9 +19,11 @@ exports the service already has and shows exactly that, per person and per house
 
 | | English | Română |
 |---|---|---|
-| Technical documentation: architecture, data flow, algorithms, diagrams | [technical-documentation.md](doc/en/technical-documentation.md) | [documentatie-tehnica.md](doc/ro/documentatie-tehnica.md) |
-| Installation and configuration | [installation.md](doc/en/installation.md) | [instalare.md](doc/ro/instalare.md) |
-| User manual, with screenshots | [user-manual.md](doc/en/user-manual.md) | [manual-utilizare.md](doc/ro/manual-utilizare.md) |
+| Technical documentation: architecture, data flow, algorithms, diagrams | [Markdown](doc/en/technical-documentation.md) · [PDF](doc/en/technical-documentation.pdf) | [Markdown](doc/ro/documentatie-tehnica.md) · [PDF](doc/ro/documentatie-tehnica.pdf) |
+| Installation and configuration | [Markdown](doc/en/installation.md) · [PDF](doc/en/installation.pdf) | [Markdown](doc/ro/instalare.md) · [PDF](doc/ro/instalare.pdf) |
+| User manual, with screenshots | [Markdown](doc/en/user-manual.md) · [PDF](doc/en/user-manual.pdf) | [Markdown](doc/ro/manual-utilizare.md) · [PDF](doc/ro/manual-utilizare.pdf) |
+
+The Markdown files are the source. `node tools/docs-pdf/build.mjs` rebuilds the PDFs from them.
 
 ## What it does
 
@@ -109,6 +111,7 @@ The *Annahmen* tab in the app shows them all.
 | `tests/` | `python -m pytest` (54 tests) |
 | `pitch/`, `video/` | Slide deck, video script, finished videos |
 | `tools/demo-video/` | Pipeline that generates the pitch video: TTS narration, headless recording, Remotion cards |
+| `tools/docs-pdf/` | `node tools/docs-pdf/build.mjs` renders the six manuals to PDF (headless Chrome, Mermaid) |
 | `tools/screenshots/` | `node tools/screenshots/capture.mjs` retakes the user-manual screenshots in `doc/img/` from the running app |
 
 The demo video is generated rather than filmed by hand; see

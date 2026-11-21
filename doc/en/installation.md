@@ -179,11 +179,8 @@ treatment of parallel jobs, which kinds of support count as social assistance, t
 size for patterns, and more. Each setting has a comment explaining it.
 
 - Edit the file with any text editor and save it **as UTF-8**.
-- **Clear the cache afterwards.** The computed results are cached per set of files and
-  Stichtag, and the cache does not notice a changed `rules.yaml`. Open the menu **⋮** at the
-  top right of the page and choose **Clear cache**, or press `C`; restarting the application
-  also works. Until then the *Annahmen* tab already shows the new rules while the numbers are
-  still the old ones.
+- The change takes effect at the next click in the application, or when you reload the page;
+  no restart is needed.
 - The **Annahmen** (assumptions) tab shows the rules in force, and the Excel result contains
   them on the *Annahmen* sheet. A result therefore always documents the rules it was computed
   with.
@@ -316,5 +313,5 @@ and uninstall Ollama like any other program.
 | "Lokales LLM nicht erreichbar" (local LLM not reachable) | Ollama is not running, or the model is missing. Start Ollama and check `ollama list`. |
 | *LLM lokal* missing in the sidebar | `data/situationsanalyse_merkmale_llm.xlsx` does not exist; see [section 5.1](#51-llm-features-for-the-demo-data). |
 | Tests fail with `ModuleNotFoundError: cockpit` | Run `python -m pytest` from the project folder. |
-| A change in `rules.yaml` does not change the numbers | The results are cached. Menu **⋮ → Clear cache**, or press `C`, or restart. |
+| A change in `rules.yaml` does not show yet | Click anything in the application, or reload the page. Check that the file was saved as UTF-8 and that the *Annahmen* tab shows the new value. |
 | The application is slow after changing the date | Every new Stichtag recomputes all goals once; later clicks use the cache. |

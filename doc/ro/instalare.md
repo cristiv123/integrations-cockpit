@@ -177,11 +177,8 @@ client actual, termenele, vârsta minimă, certificatele de limbă acceptate, pr
 minimă a grupului pentru tipare și altele. Fiecare setare are un comentariu explicativ.
 
 - Editează fișierul cu orice editor de text și salvează-l **în UTF-8**.
-- **Golește cache-ul după aceea.** Rezultatele calculate sunt memorate pentru fiecare set de
-  fișiere și Stichtag, iar cache-ul nu observă că `rules.yaml` s-a schimbat. Deschide meniul
-  **⋮** din dreapta sus a paginii și alege **Clear cache**, sau apasă `C`; funcționează și
-  repornirea aplicației. Până atunci fila *Annahmen* arată deja regulile noi, dar cifrele sunt
-  încă cele vechi.
+- Modificarea are efect la următorul clic în aplicație sau la reîncărcarea paginii; nu e nevoie
+  de repornire.
 - Fila **Annahmen** (ipoteze) arată regulile în vigoare, iar rezultatul Excel le conține pe foaia
   *Annahmen*. Astfel un rezultat documentează mereu regulile cu care a fost calculat.
 
@@ -315,5 +312,5 @@ dezinstalează Ollama ca pe orice alt program.
 | „Lokales LLM nicht erreichbar” (LLM-ul local nu răspunde) | Ollama nu rulează sau lipsește modelul. Pornește Ollama și verifică `ollama list`. |
 | *LLM lokal* lipsește din bara laterală | Nu există `data/situationsanalyse_merkmale_llm.xlsx`; vezi [secțiunea 5.1](#51-caracteristici-llm-pentru-datele-demo). |
 | Testele eșuează cu `ModuleNotFoundError: cockpit` | Rulează `python -m pytest` din folderul proiectului. |
-| O modificare în `rules.yaml` nu schimbă cifrele | Rezultatele sunt în cache. Meniul **⋮ → Clear cache**, tasta `C` sau repornire. |
+| O modificare în `rules.yaml` nu apare încă | Apasă oriunde în aplicație sau reîncarcă pagina. Verifică dacă fișierul a fost salvat în UTF-8 și dacă fila *Annahmen* arată valoarea nouă. |
 | Aplicația e lentă după schimbarea datei | Fiecare Stichtag nou recalculează o dată toate obiectivele; clicurile următoare folosesc cache-ul. |

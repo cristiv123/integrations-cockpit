@@ -404,9 +404,9 @@ Goal 3 counts households, not people.
 The *Liste* tab, with *Nur Personen im Scope* switched off, shows the reason in
 *Grund nicht anwendbar*.
 
-**I changed a rule and the numbers did not move.**
-The results are cached. Open the menu **⋮** at the top right and choose **Clear cache**, or
-press `C`.
+**A rule was changed and the numbers did not move.**
+Reload the page. The *Annahmen* tab shows which rules are in force; if it still shows the old
+value, the file was not saved.
 
 **Is the data saved anywhere?**
 No. Closing the browser discards everything. Keep the Excel result if you need a record, and
