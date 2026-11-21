@@ -18,7 +18,7 @@ from cockpit.goal3 import evaluate_goal3
 from cockpit.ingest import load_exports
 from cockpit.level2 import CAVEAT, analyse
 from cockpit.matrix import call_list, cockpit_matrix, matrix_table
-from cockpit.rules import load_rules
+from cockpit.rules import read_rules_text, rules_from_text
 from cockpit.situationsanalyse import FEATURES as SA_FEATURES
 from cockpit.situationsanalyse import evaluate as evaluate_extraction
 from cockpit.situationsanalyse import extract_documents, llm_available
@@ -44,9 +44,10 @@ def load(files: tuple[tuple[str, bytes], ...]):
     return load_exports(list(files))
 
 
+# rules_text is part of the cache key, so an edited rules.yaml takes effect at the next rerun
 @st.cache_data(show_spinner="Ziele werden berechnet …")
-def evaluate_all(files: tuple[tuple[str, bytes], ...], stichtag: date):
-    loaded, rules, ts = load(files), load_rules(), pd.Timestamp(stichtag)
+def evaluate_all(files: tuple[tuple[str, bytes], ...], stichtag: date, rules_text: str):
+    loaded, rules, ts = load(files), rules_from_text(rules_text), pd.Timestamp(stichtag)
     results, errors = {}, {}
     try:
         persons = prepare_persons(loaded.tables, rules, ts)
@@ -62,13 +63,13 @@ def evaluate_all(files: tuple[tuple[str, bytes], ...], stichtag: date):
 
 
 @st.cache_data(show_spinner="Muster werden berechnet …")
-def level2_for(files: tuple[tuple[str, bytes], ...], stichtag: date, goal: int):
-    results, _, _ = evaluate_all(files, stichtag)
+def level2_for(files: tuple[tuple[str, bytes], ...], stichtag: date, goal: int, rules_text: str):
+    results, _, _ = evaluate_all(files, stichtag, rules_text)
     extra = None
     if goal > 1 and 1 in results:
         p1 = results[1].persons.set_index("klientennummer")
         extra = {"Ziel 1 (A1) erreicht": p1["erreicht_am"].notna().map({True: "ja", False: "nein"})}
-    return analyse(results[goal], load(files).tables, load_rules(), extra)
+    return analyse(results[goal], load(files).tables, rules_from_text(rules_text), extra)
 
 
 def synthetic_files(sa_method: str) -> tuple[tuple[str, bytes], ...]:
@@ -115,9 +116,10 @@ if not files:
     st.info("Bitte die Excel-Exporte hochladen (mindestens Klient und Asylgeschäftsdaten; je Ziel die zugehörigen Tabellen).")
     st.stop()
 
-rules = load_rules()
+rules_text = read_rules_text()
+rules = rules_from_text(rules_text)
 loaded = load(files)
-results, errors, matrix = evaluate_all(files, stichtag)
+results, errors, matrix = evaluate_all(files, stichtag, rules_text)
 if not results:
     st.title("Integrations-Cockpit")
     st.error(" · ".join(errors.values()))
@@ -216,7 +218,7 @@ with tabs["Übersicht"]:
 
 level2 = None
 if "Muster" in tabs:
-    level2 = level2_for(files, stichtag, goal)
+    level2 = level2_for(files, stichtag, goal, rules_text)
     with tabs["Muster"]:
         st.subheader(f"Was haben {plural} gemeinsam, die {result.short} fristgerecht erreichen?")
         st.caption(f"Grundlage: Zielgruppe mit abgelaufener Frist, auch frühere Kohorten. Nur Gruppen ab {level2.min_group_size} {plural}, "
@@ -303,7 +305,7 @@ with tabs["Datenqualität"]:
 
 with tabs["Annahmen"]:
     st.markdown("Regeln aus `rules.yaml` – offene Punkte bitte mit dem ASD klären und dort anpassen.")
-    st.code((ROOT / "rules.yaml").read_text(encoding="utf-8"), language="yaml")
+    st.code(rules_text, language="yaml")
 
 st.sidebar.download_button(
     "⬇️ Ergebnis als Excel (alle Ziele)",
